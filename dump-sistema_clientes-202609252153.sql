@@ -32,7 +32,7 @@ CREATE TABLE `clientes` (
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -42,8 +42,9 @@ CREATE TABLE `clientes` (
 LOCK TABLES `clientes` WRITE;
 /*!40000 ALTER TABLE `clientes` DISABLE KEYS */;
 INSERT INTO `clientes` VALUES
-(1,'Testanto','teste@gmail.com','11999999999','ativo','2026-09-25 00:48:38'),
-(2,'bruno','bruno@gmail.com','11999999999','ativo','2026-09-25 22:12:28');
+(3,'Eduardo Castro','eduardo.castro@email.com','11987654321','ativo','2026-09-26 00:12:00'),
+(4,'Camila Ferreira','camila.ferreira@email.com','11976543210','ativo','2026-09-26 00:12:33'),
+(5,'Henrique Souza','henrique.souza@email.com','21965432109','ativo','2026-09-26 00:12:57');
 /*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -87,11 +88,14 @@ DROP TABLE IF EXISTS `pedidos`;
 CREATE TABLE `pedidos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `cliente_id` int(11) NOT NULL,
+  `atendido_por` int(11) DEFAULT NULL,
   `data_pedido` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('pendente','pago','cancelado') DEFAULT 'pendente',
   `valor_total` decimal(10,2) DEFAULT 0.00,
   PRIMARY KEY (`id`),
   KEY `cliente_id` (`cliente_id`),
+  KEY `fk_pedidos_usuarios` (`atendido_por`),
+  CONSTRAINT `fk_pedidos_usuarios` FOREIGN KEY (`atendido_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -121,7 +125,7 @@ CREATE TABLE `produtos` (
   `status` enum('ativo','inativo') DEFAULT 'ativo',
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -131,7 +135,9 @@ CREATE TABLE `produtos` (
 LOCK TABLES `produtos` WRITE;
 /*!40000 ALTER TABLE `produtos` DISABLE KEYS */;
 INSERT INTO `produtos` VALUES
-(1,'Teclado RGB','Teclado mecânico gamer',222.22,22,'ativo','2026-09-25 22:36:42');
+(2,'Turbina McLaren 720S','Turbocompressor original para McLaren 720S',32900.00,2,'ativo','2026-09-26 00:31:56'),
+(3,'Pastilha de Freio Cerâmica Ferrari 488','Jogo de pastilhas cerâmicas de alta performance',4200.00,8,'ativo','2026-09-26 00:32:34'),
+(4,'Revisão Completa Porsche 911 Turbo','Serviço de revisão geral com checklist de 80 pontos',5600.00,99,'ativo','2026-09-26 00:33:07');
 /*!40000 ALTER TABLE `produtos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -152,7 +158,7 @@ CREATE TABLE `usuarios` (
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -161,6 +167,10 @@ CREATE TABLE `usuarios` (
 
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
+INSERT INTO `usuarios` VALUES
+(1,'Rafael Torres','rafael.torres@apexsupercar.com','123','admin','ativo','2026-09-26 00:30:48'),
+(2,'Bianca Souza','bianca.souza@apexsupercar.com','123','operador','ativo','2026-09-26 00:30:48'),
+(3,'Diego Martins','diego.martins@apexsupercar.com','123','operador','ativo','2026-09-26 00:30:48');
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -177,4 +187,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-09-25 20:49:07
+-- Dump completed on 2026-09-25 21:53:00
