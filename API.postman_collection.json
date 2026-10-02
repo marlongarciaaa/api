@@ -8,7 +8,7 @@
   },
   "item": [
     {
-      "name": "Sistema-vendas",
+      "name": "Rota - cliente e produto",
       "item": [
         {
           "name": "POST - Clientes",
@@ -145,7 +145,7 @@
       ]
     },
     {
-      "name": "Sistema-usuarios",
+      "name": "Rota - usuarios",
       "item": [
         {
           "name": "POST /usuarios",
@@ -204,6 +204,66 @@
         },
         {
           "name": "DELETE /usuarios/:id:",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Rota - pedidos",
+      "item": [
+        {
+          "name": "GET - pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST - pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT - pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH - pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE - pedidos",
           "request": {
             "method": "GET",
             "header": [],

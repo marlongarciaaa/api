@@ -1,178 +1,157 @@
-// routes/usuarios.js
 const express = require('express');
+const db = require('../db'); // ajuste para o mesmo require usado no clientes.js
+
 const router = express.Router();
-const db = require('../db');
-const bcrypt = require('bcrypt'); // npm install bcrypt
 
-const PERFIS_VALIDOS = ['admin', 'operador'];
-const STATUS_VALIDOS = ['ativo', 'inativo'];
-const SALT_ROUNDS = 10;
+const PERFIS = ['admin', 'operador'];
+const STATUS = ['ativo', 'inativo'];
+const CAMPOS = 'id, nome, email, perfil, status, criado_em'; // nunca devolve a senha
 
-// CREATE: Inserir Usuário
+function idValido(valor) {
+  const n = Number(valor);
+  return Number.isInteger(n) && n > 0;
+}
+
+function erroBanco(res, err) {
+  if (err.code === 'ER_DUP_ENTRY') {
+    return res.status(409).json({ erro: 'Já existe um usuário com esse e-mail.' });
+  }
+  if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+    return res.status(409).json({ erro: 'Usuário vinculado a outros registros e não pode ser removido.' });
+  }
+  console.error(err);
+  return res.status(500).json({ erro: 'Erro interno do servidor.' });
+}
+
+// POST /usuarios
 router.post('/', async (req, res) => {
-  const { nome, email, senha, perfil } = req.body;
-
-  if (!nome || !email || !senha) {
-    return res.status(400).json({ mensagem: 'Nome, email e senha são obrigatórios.' });
-  }
-
-  if (perfil && !PERFIS_VALIDOS.includes(perfil)) {
-    return res.status(400).json({ mensagem: `Perfil inválido. Use: ${PERFIS_VALIDOS.join(', ')}.` });
-  }
-
   try {
-    const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
+    const { nome, email, senha, perfil = 'operador', status = 'ativo' } = req.body;
 
-    const [result] = await db.execute(
-      'INSERT INTO usuarios (nome, email, senha, perfil) VALUES (?, ?, ?, ?)',
-      [nome, email, senhaHash, perfil || 'operador']
-    );
-
-    res.status(201).json({
-      id: result.insertId,
-      nome,
-      email,
-      perfil: perfil || 'operador',
-      status: 'ativo'
-    });
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ mensagem: 'Email já cadastrado.' });
+    if (!nome || !email || !senha) {
+      return res.status(400).json({ erro: 'Campos obrigatórios: nome, email e senha.' });
     }
-    res.status(500).json({ mensagem: 'Erro interno no servidor.', detalhes: error.message });
+    if (!PERFIS.includes(perfil)) {
+      return res.status(400).json({ erro: `Perfil inválido. Use: ${PERFIS.join(', ')}.` });
+    }
+    if (!STATUS.includes(status)) {
+      return res.status(400).json({ erro: `Status inválido. Use: ${STATUS.join(', ')}.` });
+    }
+
+    const [r] = await db.query(
+      'INSERT INTO usuarios (nome, email, senha, perfil, status) VALUES (?, ?, ?, ?, ?)',
+      [nome, email, senha, perfil, status]
+    );
+    const [rows] = await db.query(`SELECT ${CAMPOS} FROM usuarios WHERE id = ?`, [r.insertId]);
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    erroBanco(res, err);
   }
 });
 
-// READ: Listar todos (nunca retornar a senha)
+// GET /usuarios
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.execute(
-      'SELECT id, nome, email, perfil, status, criado_em FROM usuarios'
-    );
+    const [rows] = await db.query(`SELECT ${CAMPOS} FROM usuarios ORDER BY id`);
     res.status(200).json(rows);
-  } catch (error) {
-    res.status(500).json({ mensagem: 'Erro ao buscar usuários.', detalhes: error.message });
+  } catch (err) {
+    erroBanco(res, err);
   }
 });
 
-// READ: Buscar por ID (nunca retornar a senha)
+// GET /usuarios/:id
 router.get('/:id', async (req, res) => {
-  const { id } = req.params;
   try {
-    const [rows] = await db.execute(
-      'SELECT id, nome, email, perfil, status, criado_em FROM usuarios WHERE id = ?',
-      [id]
-    );
-    if (rows.length === 0) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    }
+    if (!idValido(req.params.id)) return res.status(400).json({ erro: 'ID inválido.' });
+
+    const [rows] = await db.query(`SELECT ${CAMPOS} FROM usuarios WHERE id = ?`, [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ erro: 'Usuário não encontrado.' });
     res.status(200).json(rows[0]);
-  } catch (error) {
-    res.status(500).json({ mensagem: 'Erro ao buscar usuário.', detalhes: error.message });
+  } catch (err) {
+    erroBanco(res, err);
   }
 });
 
-// UPDATE Completo (PUT)
+// PUT /usuarios/:id  (atualização completa)
 router.put('/:id', async (req, res) => {
-  const { id } = req.params;
-  const { nome, email, senha, perfil, status } = req.body;
-
-  if (!nome || !email || !senha || !status) {
-    return res.status(400).json({
-      mensagem: 'Para atualização completa (PUT), informe: nome, email, senha e status.'
-    });
-  }
-
-  if (perfil && !PERFIS_VALIDOS.includes(perfil)) {
-    return res.status(400).json({ mensagem: `Perfil inválido. Use: ${PERFIS_VALIDOS.join(', ')}.` });
-  }
-  if (!STATUS_VALIDOS.includes(status)) {
-    return res.status(400).json({ mensagem: `Status inválido. Use: ${STATUS_VALIDOS.join(', ')}.` });
-  }
-
   try {
-    const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
+    if (!idValido(req.params.id)) return res.status(400).json({ erro: 'ID inválido.' });
 
-    const [result] = await db.execute(
+    const { nome, email, senha, perfil, status } = req.body;
+    if (!nome || !email || !senha || !perfil || !status) {
+      return res.status(400).json({ erro: 'PUT exige todos os campos: nome, email, senha, perfil e status.' });
+    }
+    if (!PERFIS.includes(perfil)) {
+      return res.status(400).json({ erro: `Perfil inválido. Use: ${PERFIS.join(', ')}.` });
+    }
+    if (!STATUS.includes(status)) {
+      return res.status(400).json({ erro: `Status inválido. Use: ${STATUS.join(', ')}.` });
+    }
+
+    const [r] = await db.query(
       'UPDATE usuarios SET nome = ?, email = ?, senha = ?, perfil = ?, status = ? WHERE id = ?',
-      [nome, email, senhaHash, perfil || 'operador', status, id]
+      [nome, email, senha, perfil, status, req.params.id]
     );
+    if (r.affectedRows === 0) return res.status(404).json({ erro: 'Usuário não encontrado.' });
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    }
-    res.status(200).json({ mensagem: 'Usuário atualizado completamente com sucesso.' });
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ mensagem: 'Email já cadastrado.' });
-    }
-    res.status(500).json({ mensagem: 'Erro ao atualizar usuário.', detalhes: error.message });
+    const [rows] = await db.query(`SELECT ${CAMPOS} FROM usuarios WHERE id = ?`, [req.params.id]);
+    res.status(200).json(rows[0]);
+  } catch (err) {
+    erroBanco(res, err);
   }
 });
 
-// UPDATE Parcial (PATCH)
+// PATCH /usuarios/:id  (atualização parcial)
 router.patch('/:id', async (req, res) => {
-  const { id } = req.params;
-  const campos = { ...req.body };
-
-  if (Object.keys(campos).length === 0) {
-    return res.status(400).json({ mensagem: 'Nenhum campo fornecido para atualização.' });
-  }
-
-  if (campos.perfil && !PERFIS_VALIDOS.includes(campos.perfil)) {
-    return res.status(400).json({ mensagem: `Perfil inválido. Use: ${PERFIS_VALIDOS.join(', ')}.` });
-  }
-  if (campos.status && !STATUS_VALIDOS.includes(campos.status)) {
-    return res.status(400).json({ mensagem: `Status inválido. Use: ${STATUS_VALIDOS.join(', ')}.` });
-  }
-
-  // Se a senha for enviada, faz o hash antes de montar a query
-  if (campos.senha) {
-    campos.senha = await bcrypt.hash(campos.senha, SALT_ROUNDS);
-  }
-
-  const setClauses = [];
-  const queryParams = [];
-
-  for (const [chave, valor] of Object.entries(campos)) {
-    if (['nome', 'email', 'senha', 'perfil', 'status'].includes(chave)) {
-      setClauses.push(`${chave} = ?`);
-      queryParams.push(valor);
-    }
-  }
-
-  if (setClauses.length === 0) {
-    return res.status(400).json({ mensagem: 'Nenhum campo válido enviado.' });
-  }
-
-  queryParams.push(id);
-  const sql = `UPDATE usuarios SET ${setClauses.join(', ')} WHERE id = ?`;
-
   try {
-    const [result] = await db.execute(sql, queryParams);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    if (!idValido(req.params.id)) return res.status(400).json({ erro: 'ID inválido.' });
+
+    const permitidos = ['nome', 'email', 'senha', 'perfil', 'status'];
+    const campos = [];
+    const valores = [];
+
+    for (const campo of permitidos) {
+      if (req.body[campo] !== undefined) {
+        const valor = req.body[campo];
+        if (valor === '' || valor === null) {
+          return res.status(400).json({ erro: `O campo ${campo} não pode ser vazio.` });
+        }
+        if (campo === 'perfil' && !PERFIS.includes(valor)) {
+          return res.status(400).json({ erro: `Perfil inválido. Use: ${PERFIS.join(', ')}.` });
+        }
+        if (campo === 'status' && !STATUS.includes(valor)) {
+          return res.status(400).json({ erro: `Status inválido. Use: ${STATUS.join(', ')}.` });
+        }
+        campos.push(`${campo} = ?`);
+        valores.push(valor);
+      }
     }
-    res.status(200).json({ mensagem: 'Usuário atualizado parcialmente com sucesso.' });
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ mensagem: 'Email já cadastrado.' });
+
+    if (campos.length === 0) {
+      return res.status(400).json({ erro: `Envie ao menos um campo: ${permitidos.join(', ')}.` });
     }
-    res.status(500).json({ mensagem: 'Erro ao atualizar usuário.', detalhes: error.message });
+
+    valores.push(req.params.id);
+    const [r] = await db.query(`UPDATE usuarios SET ${campos.join(', ')} WHERE id = ?`, valores);
+    if (r.affectedRows === 0) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+
+    const [rows] = await db.query(`SELECT ${CAMPOS} FROM usuarios WHERE id = ?`, [req.params.id]);
+    res.status(200).json(rows[0]);
+  } catch (err) {
+    erroBanco(res, err);
   }
 });
 
-// DELETE: Remover
+// DELETE /usuarios/:id
 router.delete('/:id', async (req, res) => {
-  const { id } = req.params;
   try {
-    const [result] = await db.execute('DELETE FROM usuarios WHERE id = ?', [id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
-    }
+    if (!idValido(req.params.id)) return res.status(400).json({ erro: 'ID inválido.' });
+
+    const [r] = await db.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]);
+    if (r.affectedRows === 0) return res.status(404).json({ erro: 'Usuário não encontrado.' });
     res.status(200).json({ mensagem: 'Usuário removido com sucesso.' });
-  } catch (error) {
-    res.status(500).json({ mensagem: 'Erro ao remover usuário.', detalhes: error.message });
+  } catch (err) {
+    erroBanco(res, err);
   }
 });
 

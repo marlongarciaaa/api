@@ -42,9 +42,9 @@ CREATE TABLE `clientes` (
 LOCK TABLES `clientes` WRITE;
 /*!40000 ALTER TABLE `clientes` DISABLE KEYS */;
 INSERT INTO `clientes` VALUES
-(3,'Eduardo Castro','eduardo.castro@email.com','11987654321','ativo','2026-09-26 00:12:00'),
-(4,'Camila Ferreira','camila.ferreira@email.com','11976543210','ativo','2026-09-26 00:12:33'),
-(5,'Henrique Souza','henrique.souza@email.com','21965432109','ativo','2026-09-26 00:12:57');
+(3,'Eduardo Castro','eduardo.castro@email.com','11987654321','ativo','2026-10-01 23:09:38'),
+(4,'Camila Ferreira','camila.ferreira@email.com','11976543210','ativo','2026-10-01 23:09:38'),
+(5,'Henrique Souza','henrique.souza@email.com','21965432109','ativo','2026-10-01 23:09:38');
 /*!40000 ALTER TABLE `clientes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -62,11 +62,11 @@ CREATE TABLE `itens_pedido` (
   `quantidade` int(11) NOT NULL,
   `preco_unitario` decimal(10,2) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `pedido_id` (`pedido_id`),
-  KEY `produto_id` (`produto_id`),
-  CONSTRAINT `itens_pedido_ibfk_1` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `itens_pedido_ibfk_2` FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `fk_itens_pedidos` (`pedido_id`),
+  KEY `fk_itens_produtos` (`produto_id`),
+  CONSTRAINT `fk_itens_pedidos` FOREIGN KEY (`pedido_id`) REFERENCES `pedidos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_itens_produtos` FOREIGN KEY (`produto_id`) REFERENCES `produtos` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -75,6 +75,11 @@ CREATE TABLE `itens_pedido` (
 
 LOCK TABLES `itens_pedido` WRITE;
 /*!40000 ALTER TABLE `itens_pedido` DISABLE KEYS */;
+INSERT INTO `itens_pedido` VALUES
+(1,1,2,1,32900.00),
+(2,1,3,2,4200.00),
+(3,2,4,1,5600.00),
+(4,3,3,1,4200.00);
 /*!40000 ALTER TABLE `itens_pedido` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -93,11 +98,11 @@ CREATE TABLE `pedidos` (
   `status` enum('pendente','pago','cancelado') DEFAULT 'pendente',
   `valor_total` decimal(10,2) DEFAULT 0.00,
   PRIMARY KEY (`id`),
-  KEY `cliente_id` (`cliente_id`),
+  KEY `fk_pedidos_clientes` (`cliente_id`),
   KEY `fk_pedidos_usuarios` (`atendido_por`),
-  CONSTRAINT `fk_pedidos_usuarios` FOREIGN KEY (`atendido_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `pedidos_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `fk_pedidos_clientes` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
+  CONSTRAINT `fk_pedidos_usuarios` FOREIGN KEY (`atendido_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -106,6 +111,10 @@ CREATE TABLE `pedidos` (
 
 LOCK TABLES `pedidos` WRITE;
 /*!40000 ALTER TABLE `pedidos` DISABLE KEYS */;
+INSERT INTO `pedidos` VALUES
+(1,3,2,'2026-10-01 23:09:44','pendente',0.00),
+(2,4,3,'2026-10-01 23:09:44','pago',0.00),
+(3,5,1,'2026-10-01 23:09:44','cancelado',0.00);
 /*!40000 ALTER TABLE `pedidos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -135,9 +144,9 @@ CREATE TABLE `produtos` (
 LOCK TABLES `produtos` WRITE;
 /*!40000 ALTER TABLE `produtos` DISABLE KEYS */;
 INSERT INTO `produtos` VALUES
-(2,'Turbina McLaren 720S','Turbocompressor original para McLaren 720S',32900.00,2,'ativo','2026-09-26 00:31:56'),
-(3,'Pastilha de Freio Cerâmica Ferrari 488','Jogo de pastilhas cerâmicas de alta performance',4200.00,8,'ativo','2026-09-26 00:32:34'),
-(4,'Revisão Completa Porsche 911 Turbo','Serviço de revisão geral com checklist de 80 pontos',5600.00,99,'ativo','2026-09-26 00:33:07');
+(2,'Turbina McLaren 720S','Turbocompressor original para McLaren 720S',32900.00,2,'ativo','2026-10-01 23:09:40'),
+(3,'Pastilha de Freio Cerâmica Ferrari 488','Jogo de pastilhas cerâmicas de alta performance',4200.00,8,'ativo','2026-10-01 23:09:40'),
+(4,'Revisão Completa Porsche 911 Turbo','Serviço de revisão geral com checklist de 80 pontos',5600.00,99,'ativo','2026-10-01 23:09:40');
 /*!40000 ALTER TABLE `produtos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -168,9 +177,9 @@ CREATE TABLE `usuarios` (
 LOCK TABLES `usuarios` WRITE;
 /*!40000 ALTER TABLE `usuarios` DISABLE KEYS */;
 INSERT INTO `usuarios` VALUES
-(1,'Rafael Torres','rafael.torres@apexsupercar.com','123','admin','ativo','2026-09-26 00:30:48'),
-(2,'Bianca Souza','bianca.souza@apexsupercar.com','123','operador','ativo','2026-09-26 00:30:48'),
-(3,'Diego Martins','diego.martins@apexsupercar.com','123','operador','ativo','2026-09-26 00:30:48');
+(1,'Rafael Torres','rafael.torres@apexsupercar.com','123','admin','ativo','2026-10-01 23:09:42'),
+(2,'Bianca Souza','bianca.souza@apexsupercar.com','123','operador','ativo','2026-10-01 23:09:42'),
+(3,'Diego Martins','diego.martins@apexsupercar.com','123','operador','ativo','2026-10-01 23:09:42');
 /*!40000 ALTER TABLE `usuarios` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -187,4 +196,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2026-09-25 21:53:00
+-- Dump completed on 2026-10-01 21:05:03
